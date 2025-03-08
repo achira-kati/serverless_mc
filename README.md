@@ -22,17 +22,17 @@ A lightweight, Docker-based solution for hosting private Minecraft servers among
 - **Modpack support** — just provide a ZIP URL.
 
 ## Prerequisites
-1. Docker & Docker Compose
-2. Tailscale & Tailscale API key
-3. GitHub repository & personal access token
+1. [Docker](https://www.docker.com/)
+2. [Tailscale](https://tailscale.com/) & [Tailscale API key](https://login.tailscale.com/admin/settings/keys)
+3. [GitHub repository](https://github.com/) & [personal access token](https://github.com/settings/tokens)
 4. Hosted Modpack ZIP (e.g., from [CurseForge](https://www.curseforge.com/minecraft/search?page=1&pageSize=20&sortBy=relevancy&class=modpacks) “Server Packs”)
 
 ## Installation and Setup
-1. **Download** this repository (via GitHub Releases or `git clone`).
+1. **Download** this repository
 2. **Configure** environment:
-   - GitHub repo & token
+   - [GitHub repo](https://github.com/) named "minecraft_data" & [token](https://github.com/settings/tokens)
    - Tailscale installed & authenticated
-   - Tailscale API key
+   - [Tailscale API key](https://login.tailscale.com/admin/settings/keys)
    - Modpack ZIP URL
 3. **Deploy**:
    - **Linux/macOS**: `./deploy.sh`
