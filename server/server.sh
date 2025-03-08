@@ -15,7 +15,7 @@ cd "$SERVER_DIR" || {
 # Check if this is a fresh server installation by looking for startup script
 is_fresh_install() {
     # Check if there's a startup script in the directory
-    if find "$SERVER_DIR" -name "start*.sh" -type f | grep -q .; then
+    if find "$SERVER_DIR" -name "start*.sh" -o -name "run*.sh" -type f | grep -q .; then
         # Startup script exists, so this is NOT a fresh install
         return 1
     fi
@@ -27,11 +27,11 @@ is_fresh_install() {
 
 # Find the startup script in the server directory
 find_startup_script() {
-    # Find the first script matching start*.sh pattern
-    STARTUP_SCRIPT=$(find "$SERVER_DIR" -name "start*.sh" -type f | head -n 1)
+    # Find the first script matching start*.sh or run*.sh pattern
+    STARTUP_SCRIPT=$(find "$SERVER_DIR" -name "start*.sh" -o -name "run*.sh" -type f | head -n 1)
 
     if [ -z "$STARTUP_SCRIPT" ]; then
-        echo "No startup script (start*.sh) found in $SERVER_DIR!"
+        echo "No startup script (start*.sh or run*.sh) found in $SERVER_DIR!"
         return 1
     fi
 
