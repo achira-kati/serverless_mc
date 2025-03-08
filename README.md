@@ -21,6 +21,9 @@ A lightweight, Docker-based solution for hosting private Minecraft servers among
 - **Tailscale integration** for easy private networking.
 - **Modpack support** — just provide a ZIP URL.
 
+## How to start and transfer server
+[![Start Server](https://img.youtube.com/vi/i3G4cO-Fu5A/0.jpg)](https://youtu.be/i3G4cO-Fu5A?si=k4Eipqxw80qxPev6)
+
 ## Prerequisites
 1. [Docker](https://www.docker.com/)
 2. [Tailscale](https://tailscale.com/) & [Tailscale API key](https://login.tailscale.com/admin/settings/keys)
