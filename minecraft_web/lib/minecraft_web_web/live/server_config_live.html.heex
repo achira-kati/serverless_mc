@@ -1,0 +1,215 @@
+<div class="min-h-screen bg-gray-100 dark:bg-gray-900 py-12">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-slate-700">
+      <div class="text-center mb-8">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+          Minecraft Server Configuration
+        </h1>
+        <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+          Configure your Minecraft server environment before continuing
+        </p>
+      </div>
+
+      <.form :let={_} for={%{}} as={:env_form} phx-submit="save_env_vars" phx-change="validate">
+        <div class="space-y-6">
+          <!-- Repository URL -->
+          <div>
+            <.label for="repo_url">Repository URL <span class="text-red-500">*</span></.label>
+            <div class="mt-1 relative rounded-md shadow-sm">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <.icon name="hero-code-bracket-solid" class="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                id="repo_url"
+                name="env_vars[REPO_URL]"
+                value={@environment_variables["REPO_URL"]}
+                class={"pl-10 block w-full rounded-md shadow-sm #{if @env_validation_errors["REPO_URL"], do: "border-red-300 text-red-900 placeholder-red-300 focus:outline-none focus:ring-red-500 focus:border-red-500 dark:border-red-500 dark:bg-slate-700 dark:text-red-300", else: "border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-blue-500 focus:border-blue-500"}"}
+                placeholder="e.g., https://github.com/username/repo.git"
+              />
+            </div>
+            <%= if @env_validation_errors["REPO_URL"] do %>
+              <.error>{@env_validation_errors["REPO_URL"]}</.error>
+            <% else %>
+              <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                The Git repository URL for storing server data
+              </p>
+            <% end %>
+          </div>
+
+<!-- Git Token -->
+          <div>
+            <.label for="git_token">Git Token <span class="text-red-500">*</span></.label>
+            <div class="mt-1 relative rounded-md shadow-sm">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <.icon name="hero-key-solid" class="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type={if @show_git_token, do: "text", else: "password"}
+                id="git_token"
+                name="env_vars[GIT_TOKEN]"
+                value={@environment_variables["GIT_TOKEN"]}
+                class={"pl-10 pr-12 block w-full rounded-md shadow-sm #{if @env_validation_errors["GIT_TOKEN"], do: "border-red-300 text-red-900 placeholder-red-300 focus:outline-none focus:ring-red-500 focus:border-red-500 dark:border-red-500 dark:bg-slate-700 dark:text-red-300", else: "border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-blue-500 focus:border-blue-500"}"}
+              />
+              <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <button
+                  type="button"
+                  phx-click="toggle_git_token_visibility"
+                  class="text-gray-400 hover:text-gray-500 focus:outline-none focus:text-gray-500"
+                  aria-label={if @show_git_token, do: "Hide Git token", else: "Show Git token"}
+                >
+                  <.icon name={if @show_git_token, do: "hero-eye-slash", else: "hero-eye"} class="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            <%= if @env_validation_errors["GIT_TOKEN"] do %>
+              <.error>{@env_validation_errors["GIT_TOKEN"]}</.error>
+            <% else %>
+              <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                A GitHub/GitLab personal access token with repo permissions
+              </p>
+            <% end %>
+          </div>
+
+<!-- Tailscale Auth Key -->
+          <div>
+            <.label for="ts_authkey">
+              Tailscale Auth Key <span class="text-red-500">*</span>
+            </.label>
+            <div class="mt-1 relative rounded-md shadow-sm">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <.icon name="hero-key-solid" class="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type={if @show_ts_authkey, do: "text", else: "password"}
+                id="ts_authkey"
+                name="env_vars[TS_AUTHKEY]"
+                value={@environment_variables["TS_AUTHKEY"]}
+                class={"pl-10 pr-12 block w-full rounded-md shadow-sm #{if @env_validation_errors["TS_AUTHKEY"], do: "border-red-300 text-red-900 placeholder-red-300 focus:outline-none focus:ring-red-500 focus:border-red-500 dark:border-red-500 dark:bg-slate-700 dark:text-red-300", else: "border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-blue-500 focus:border-blue-500"}"}
+              />
+              <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <button
+                  type="button"
+                  phx-click="toggle_ts_authkey_visibility"
+                  class="text-gray-400 hover:text-gray-500 focus:outline-none focus:text-gray-500"
+                  aria-label={if @show_ts_authkey, do: "Hide Tailscale auth key", else: "Show Tailscale auth key"}
+                >
+                  <.icon name={if @show_ts_authkey, do: "hero-eye-slash", else: "hero-eye"} class="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+            <%= if @env_validation_errors["TS_AUTHKEY"] do %>
+              <.error>{@env_validation_errors["TS_AUTHKEY"]}</.error>
+            <% else %>
+              <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Auth key for Tailscale network access
+              </p>
+            <% end %>
+          </div>
+
+<!-- Download Server URL -->
+          <div>
+            <.label for="download_url">
+              Download Server URL <span class="text-red-500">*</span>
+            </.label>
+            <div class="mt-1 relative rounded-md shadow-sm">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <.icon name="hero-arrow-down-tray-solid" class="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                id="download_url"
+                name="env_vars[DOWNLOAD_SERVER_URL]"
+                value={@environment_variables["DOWNLOAD_SERVER_URL"]}
+                class={"pl-10 block w-full rounded-md shadow-sm #{if @env_validation_errors["DOWNLOAD_SERVER_URL"], do: "border-red-300 text-red-900 placeholder-red-300 focus:outline-none focus:ring-red-500 focus:border-red-500 dark:border-red-500 dark:bg-slate-700 dark:text-red-300", else: "border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-blue-500 focus:border-blue-500"}"}
+                placeholder="URL to server.zip file"
+              />
+            </div>
+            <%= if @env_validation_errors["DOWNLOAD_SERVER_URL"] do %>
+              <.error>{@env_validation_errors["DOWNLOAD_SERVER_URL"]}</.error>
+            <% else %>
+              <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                URL to the Minecraft server package (zip file)
+              </p>
+            <% end %>
+          </div>
+
+<!-- Allow Crack Client -->
+          <div>
+            <.label for="allow_crack">Allow Crack Client</.label>
+            <div class="mt-1 relative rounded-md shadow-sm">
+              <select
+                id="allow_crack"
+                name="env_vars[ALLOW_CRACK_CLIENT]"
+                class="block w-full rounded-md border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option
+                  value="false"
+                  selected={@environment_variables["ALLOW_CRACK_CLIENT"] == "false"}
+                >
+                  No
+                </option>
+                <option
+                  value="true"
+                  selected={@environment_variables["ALLOW_CRACK_CLIENT"] == "true"}
+                >
+                  Yes
+                </option>
+              </select>
+            </div>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              Enable to allow non-premium Minecraft clients
+            </p>
+          </div>
+
+<!-- Git User Name -->
+          <div>
+            <.label for="git_user">
+              Git User Name <span class="text-gray-400">(optional)</span>
+            </.label>
+            <div class="mt-1 relative rounded-md shadow-sm">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <.icon name="hero-user-solid" class="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                id="git_user"
+                name="env_vars[GIT_USER_NAME]"
+                value={@environment_variables["GIT_USER_NAME"]}
+                class="pl-10 block w-full rounded-md border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+<!-- Git User Email -->
+          <div>
+            <.label for="git_email">
+              Git User Email <span class="text-gray-400">(optional)</span>
+            </.label>
+            <div class="mt-1 relative rounded-md shadow-sm">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <.icon name="hero-envelope-solid" class="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="email"
+                id="git_email"
+                name="env_vars[GIT_USER_EMAIL]"
+                value={@environment_variables["GIT_USER_EMAIL"]}
+                class="pl-10 block w-full rounded-md border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 flex justify-center">
+          <.button
+            type="submit"
+            class="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            <.icon name="hero-check-solid" class="h-5 w-5 mr-2" /> Save Configuration
+          </.button>
+        </div>
+      </.form>
+    </div>
+  </div>
+</div>

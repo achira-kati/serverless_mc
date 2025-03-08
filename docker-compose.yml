@@ -1,0 +1,58 @@
+services:
+  volume-permissions:
+    image: busybox
+    command: chown -R 1000:1000 /minecraft
+    volumes:
+      - minecraft_data:/minecraft
+    restart: "no"
+
+  redis:
+    image: redis:alpine
+    container_name: minecraft-redis
+    depends_on:
+      - volume-permissions
+    ports:
+      - "6379:6379"
+    volumes:
+      - cache:/data
+    restart: unless-stopped
+
+  web-gui:
+    build: ./minecraft_web
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - volume-permissions
+    env_file:
+      - ./env
+    volumes:
+      - minecraft_data:/minecraft
+    user: "1000:1000"
+
+  minecraft-server:
+    build:
+      context: ./server
+    image: serverless_mc
+    container_name: minecraft-server
+    volumes:
+      - minecraft_data:/minecraft
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+    env_file:
+      - ./env
+    depends_on:
+      - volume-permissions
+      - redis
+      - web-gui
+    privileged: true
+    restart: unless-stopped
+
+volumes:
+  cache:
+    driver: local
+  minecraft_data:
+    driver: local

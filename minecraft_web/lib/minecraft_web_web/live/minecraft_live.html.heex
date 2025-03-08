@@ -1,0 +1,513 @@
+<!-- External Running Modal - Cannot be dismissed -->
+<.modal :if={@external_running} id="external-running-warning" show={true} dismissible={false}>
+  <div class="flex items-center mb-4">
+    <div class="flex-shrink-0 bg-red-100 dark:bg-red-900/30 rounded-full p-2 mr-3">
+      <.icon
+        name="hero-exclamation-triangle-solid"
+        class="h-6 w-6 text-red-600 dark:text-red-500"
+      />
+    </div>
+    <h2 class="text-lg font-medium text-gray-900 dark:text-white">
+      Friend Running Server
+    </h2>
+  </div>
+
+  <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+    Your friend is currently running the Minecraft server. This may lead to conflicts with saving the server state.
+  </p>
+  <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+    Tell your friend to stop the server bro.
+  </p>
+
+  <div class="flex justify-center mt-6">
+    <.button phx-click="show_env_modal" type="button" class="flex items-center">
+      <.icon name="hero-cog-solid" class="h-5 w-5 mr-2" /> Configure Environment
+    </.button>
+  </div>
+</.modal>
+
+<!-- Add a warning banner at the top if config is invalid -->
+<%= if !@config_valid do %>
+  <div class="mb-6 bg-yellow-100 border-l-4 border-yellow-500 p-4 dark:bg-yellow-800/30 dark:border-yellow-600">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <.icon name="hero-exclamation-triangle-solid" class="h-5 w-5 text-yellow-500" />
+      </div>
+      <div class="ml-3">
+        <p class="text-sm text-yellow-700 dark:text-yellow-200">
+          <strong>Configuration Required:</strong>
+          You need to set up required environment variables before controlling the server.
+        </p>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<div class="flex h-screen bg-gray-100 dark:bg-gray-900 overflow-hidden">
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <header class="flex justify-between items-center p-4 border-b bg-white dark:bg-slate-800 dark:border-slate-700">
+      <h1 class="text-xl font-bold text-gray-800 dark:text-white">
+        MC Dashboard
+      </h1>
+
+      <.button
+        phx-click="show_env_modal"
+        class="inline-flex items-center px-4 py-2 rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+      >
+        <.icon name="hero-cog-solid" class="-ml-1 mr-2 h-5 w-5" /> Configure
+      </.button>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-4 bg-gray-100 dark:bg-gray-900">
+      <!-- Status Overview -->
+      <div class="mb-6">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-slate-700">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center">
+              <!-- Status Indicator: Dot or Loading Circle -->
+              <%= if is_transitional_state?(@status) do %>
+                <!-- Loading Spinner for Transitional States -->
+                <svg
+                  class="animate-spin h-4 w-4 text-yellow-500 mr-3"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  >
+                  </circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  >
+                  </path>
+                </svg>
+              <% else %>
+                <!-- Static Dot for Stable States -->
+                <div class={
+                  "h-3 w-3 rounded-full mr-3 " <>
+                  if String.contains?(String.downcase(@status || ""), "running") do
+                    "bg-green-500 animate-pulse"
+                  else
+                    "bg-red-500"
+                  end
+                }>
+                </div>
+              <% end %>
+              <div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Server Status</p>
+                <p class="text-lg font-semibold text-gray-900 dark:text-white">{@status}</p>
+                <%= if @details do %>
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{@details}</p>
+                <% end %>
+              </div>
+            </div>
+            <div class={
+              cond do
+                String.contains?(String.downcase(@status || ""), "running") -> "bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300"
+                String.contains?(String.downcase(@status || ""), "stopped") -> "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                true -> "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+              end <> " p-3 rounded-lg"
+            }>
+              <.icon name="hero-ellipsis-horizontal-solid" class="h-6 w-6" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+<!-- Control Section -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-6">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+          <.icon name="hero-cog-solid" class="h-5 w-5 mr-2 text-blue-500" /> Server Controls
+        </h2>
+
+<!-- Primary Controls -->
+        <div class="flex flex-wrap gap-3 mb-4">
+          <.button
+            phx-click="send_command"
+            phx-value-command="start"
+            disabled={
+              !@config_valid || server_running?(@status) || is_transitional_state?(@status)
+            }
+            class="flex items-center justify-center px-4 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={
+              cond do
+                is_transitional_state?(@status) -> "Operation in progress..."
+                server_running?(@status) -> "Server is already running"
+                true -> "Start the server"
+              end
+            }
+          >
+            <.icon name="hero-play-circle-solid" class="h-5 w-5 mr-2" /> Start
+          </.button>
+
+          <.button
+            phx-click="send_command"
+            phx-value-command="stop"
+            disabled={
+              !@config_valid || !server_running?(@status) || is_transitional_state?(@status)
+            }
+            class="flex items-center justify-center px-4 py-2 rounded-lg text-white bg-gray-600 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={
+              if !server_running?(@status), do: "Server is not running", else: "Stop the server"
+            }
+          >
+            <.icon name="hero-stop-circle-solid" class="h-5 w-5 mr-2" /> Stop
+          </.button>
+
+          <.button
+            phx-click="send_command"
+            phx-value-command="restart"
+            disabled={
+              !@config_valid || !server_running?(@status) || is_transitional_state?(@status)
+            }
+            class="flex items-center justify-center px-4 py-2 rounded-lg text-white bg-gray-500 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            title={
+              if !server_running?(@status),
+                do: "Server is not running",
+                else: "Restart the server"
+            }
+          >
+            <.icon name="hero-arrow-path-solid" class="h-5 w-5 mr-2" /> Restart
+          </.button>
+        </div>
+
+<!-- Secondary Controls -->
+        <div class="flex flex-wrap gap-3">
+          <.button
+            phx-click="send_command"
+            phx-value-command="status"
+            class="flex items-center justify-center px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600"
+          >
+            <.icon
+              name="hero-arrow-path-solid"
+              class="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400"
+            /> Status
+          </.button>
+
+          <.button
+            phx-click="send_command"
+            phx-value-command="tailscale_ip"
+            class="flex items-center justify-center px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600"
+          >
+            <.icon name="hero-signal-solid" class="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" />
+            Show IP
+          </.button>
+        </div>
+      </div>
+
+<!-- Logs Section -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+            <.icon name="hero-sparkles-solid" class="h-5 w-5 mr-2 text-blue-500" /> Server Logs
+          </h2>
+          <div class="flex bg-gray-100 dark:bg-slate-700 p-1 rounded-lg">
+            <button
+              phx-click="switch_tab"
+              phx-value-tab="terminal"
+              class={"px-3 py-1.5 text-sm font-medium rounded-md #{if @active_tab == "terminal", do: "bg-white dark:bg-slate-600 shadow-sm text-blue-600 dark:text-white", else: "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"}"}
+            >
+              Live Terminal
+            </button>
+            <button
+              phx-click="switch_tab"
+              phx-value-tab="batch_logs"
+              class={"px-3 py-1.5 text-sm font-medium rounded-md #{if @active_tab == "batch_logs", do: "bg-white dark:bg-slate-600 shadow-sm text-blue-600 dark:text-white", else: "text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"}"}
+            >
+              Batch Logs
+            </button>
+          </div>
+        </div>
+
+        <%= if @active_tab == "batch_logs" do %>
+          <!-- Batch Logs Tab -->
+          <div class="mb-4 flex flex-wrap items-center gap-2">
+            <.button
+              phx-click="send_command"
+              phx-value-command="logs"
+              class="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <.icon name="hero-arrow-path-solid" class="h-4 w-4 mr-1.5" /> Fetch Logs
+            </.button>
+            <.form
+              :let={_}
+              for={%{}}
+              as={:logs_form}
+              phx-submit="fetch_logs"
+              class="flex items-center max-w-xs"
+            >
+              <div class="relative flex items-center">
+                <span class="mr-2 text-sm text-gray-600 dark:text-gray-300">Lines:</span>
+                <input
+                  type="number"
+                  name="lines"
+                  value="100"
+                  min="10"
+                  max="1000"
+                  class="block w-20 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                />
+                <.button
+                  type="submit"
+                  class="ml-2 inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  <.icon name="hero-arrow-right-solid" class="h-4 w-4 mr-1" /> Fetch
+                </.button>
+              </div>
+            </.form>
+          </div>
+
+          <div class="bg-slate-900 text-blue-300 p-4 rounded-lg font-mono text-sm h-96 overflow-y-auto border border-slate-700">
+            <%= for log <- @logs do %>
+              <div class="py-0.5">{log}</div>
+            <% end %>
+          </div>
+        <% else %>
+          <!-- Live Terminal Tab -->
+          <div class="bg-slate-900 text-blue-300 p-4 rounded-lg font-mono text-sm h-96 overflow-y-auto border border-slate-700">
+            <%= for log <- Enum.reverse(@xterm_logs) do %>
+              <div class="py-0.5">{ansi_to_html(log)}</div>
+            <% end %>
+          </div>
+        <% end %>
+
+<!-- Minecraft command input -->
+        <.form
+          :let={_}
+          for={%{}}
+          as={:command_form}
+          phx-submit={JS.push("send_minecraft_command") |> JS.dispatch("reset", to: "#command_form")}
+          id="command_form"
+          class="mt-4"
+        >
+          <div class="flex">
+            <div class="relative flex-grow">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <.icon name="hero-code-bracket-solid" class="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                name="command"
+                placeholder="Enter Minecraft command..."
+                class="pl-10 block w-full rounded-l-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                autocomplete="off"
+              />
+            </div>
+            <.button
+              type="submit"
+              class="inline-flex items-center px-4 py-2 border border-transparent rounded-r-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <.icon name="hero-paper-airplane-solid" class="h-5 w-5 mr-2" /> Send
+            </.button>
+          </div>
+        </.form>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Environment Variables Modal -->
+<.modal
+  :if={@show_env_modal}
+  id="env-modal"
+  show={@show_env_modal}
+  on_cancel={JS.push("hide_env_modal")}
+>
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+      <.icon name="hero-cog-solid" class="h-6 w-6 mr-2 text-blue-500" />
+      Server Environment Variables
+    </h2>
+  </div>
+
+  <!-- Add warning message about changing settings -->
+  <div class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-md border border-yellow-200 dark:border-yellow-800">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <.icon name="hero-exclamation-triangle" class="h-5 w-5 text-yellow-400" />
+      </div>
+      <div class="ml-3">
+        <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-300">Settings Cannot Be Modified</h3>
+        <div class="mt-2 text-sm text-yellow-700 dark:text-yellow-200">
+          <p>
+            Once a server is configured, environment settings cannot be modified. If you need to change these settings,
+            you must perform a fresh installation by redeploying your Minecraft server.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <.form :let={_} for={%{}} as={:env_form}>
+    <div class="space-y-5">
+      <!-- Repository URL -->
+      <div>
+        <.label for="repo_url">Repository URL</.label>
+        <div class="mt-1 relative rounded-md shadow-sm">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <.icon name="hero-code-bracket-solid" class="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            id="repo_url"
+            value={@environment_variables["REPO_URL"]}
+            disabled
+            class="pl-10 block w-full rounded-md border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white bg-gray-100 dark:bg-slate-800 cursor-not-allowed"
+          />
+        </div>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          The Git repository URL for storing server data
+        </p>
+      </div>
+
+      <!-- Git Token -->
+      <div>
+        <.label for="git_token">Git Token</.label>
+        <div class="mt-1 relative rounded-md shadow-sm">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <.icon name="hero-key-solid" class="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type={if @show_git_token, do: "text", else: "password"}
+            id="git_token"
+            value={@environment_variables["GIT_TOKEN"] || "••••••••••••••••••••••"}
+            disabled
+            class="pl-10 pr-12 block w-full rounded-md border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white bg-gray-100 dark:bg-slate-800 cursor-not-allowed"
+          />
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <button
+              type="button"
+              phx-click="toggle_git_token_visibility"
+              class="text-gray-400 hover:text-gray-500 focus:outline-none focus:text-gray-500"
+              aria-label={if @show_git_token, do: "Hide Git token", else: "Show Git token"}
+            >
+              <.icon name={if @show_git_token, do: "hero-eye-slash", else: "hero-eye"} class="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          A GitHub/GitLab personal access token with repo permissions
+        </p>
+      </div>
+
+      <!-- Tailscale Auth Key -->
+      <div>
+        <.label for="ts_authkey">Tailscale Auth Key</.label>
+        <div class="mt-1 relative rounded-md shadow-sm">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <.icon name="hero-key-solid" class="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type={if @show_ts_authkey, do: "text", else: "password"}
+            id="ts_authkey"
+            value={@environment_variables["TS_AUTHKEY"] || "••••••••••••••••••••••"}
+            disabled
+            class="pl-10 pr-12 block w-full rounded-md border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white bg-gray-100 dark:bg-slate-800 cursor-not-allowed"
+          />
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <button
+              type="button"
+              phx-click="toggle_ts_authkey_visibility"
+              class="text-gray-400 hover:text-gray-500 focus:outline-none focus:text-gray-500"
+              aria-label={if @show_ts_authkey, do: "Hide Tailscale auth key", else: "Show Tailscale auth key"}
+            >
+              <.icon name={if @show_ts_authkey, do: "hero-eye-slash", else: "hero-eye"} class="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          Auth key for Tailscale network access
+        </p>
+      </div>
+
+      <!-- Download Server URL -->
+      <div>
+        <.label for="download_url">Download Server URL</.label>
+        <div class="mt-1 relative rounded-md shadow-sm">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <.icon name="hero-arrow-down-tray-solid" class="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            id="download_url"
+            value={@environment_variables["DOWNLOAD_SERVER_URL"]}
+            disabled
+            class="pl-10 block w-full rounded-md border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white bg-gray-100 dark:bg-slate-800 cursor-not-allowed"
+          />
+        </div>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          URL to the Minecraft server package (zip file)
+        </p>
+      </div>
+
+      <!-- Allow Crack Client -->
+      <div>
+        <.label for="allow_crack">Allow Crack Client</.label>
+        <div class="mt-1 relative rounded-md shadow-sm">
+          <input
+            type="text"
+            id="allow_crack"
+            value={if @environment_variables["ALLOW_CRACK_CLIENT"] == "true", do: "Yes", else: "No"}
+            disabled
+            class="pl-3 block w-full rounded-md border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white bg-gray-100 dark:bg-slate-800 cursor-not-allowed"
+          />
+        </div>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          Enable to allow non-premium Minecraft clients
+        </p>
+      </div>
+
+      <!-- Git User Name -->
+      <div>
+        <.label for="git_user">Git User Name</.label>
+        <div class="mt-1 relative rounded-md shadow-sm">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <.icon name="hero-user-solid" class="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            id="git_user"
+            value={@environment_variables["GIT_USER_NAME"]}
+            disabled
+            class="pl-10 block w-full rounded-md border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white bg-gray-100 dark:bg-slate-800 cursor-not-allowed"
+          />
+        </div>
+      </div>
+
+      <!-- Git User Email -->
+      <div>
+        <.label for="git_email">Git User Email</.label>
+        <div class="mt-1 relative rounded-md shadow-sm">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <.icon name="hero-envelope-solid" class="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="email"
+            id="git_email"
+            value={@environment_variables["GIT_USER_EMAIL"]}
+            disabled
+            class="pl-10 block w-full rounded-md border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white bg-gray-100 dark:bg-slate-800 cursor-not-allowed"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-8 flex justify-end">
+      <.button
+        type="button"
+        phx-click="hide_env_modal"
+        class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-slate-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600"
+      >
+        Close
+      </.button>
+    </div>
+  </.form>
+</.modal>

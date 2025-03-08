@@ -1,0 +1,4 @@
+minecraft_data/
+redis-data/
+.DS_Store
+env
